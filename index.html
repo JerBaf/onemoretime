@@ -347,6 +347,9 @@ select{
 // Colle ici la config de ton projet Firebase (voir README).
 // Tant que databaseURL est vide, l'app tourne en MODE LOCAL (un seul
 // navigateur, plusieurs onglets) — pratique pour tester seul.
+// ⚠ Colle uniquement les VALEURS entre les accolades. Ne remplace pas la ligne
+// `const FIREBASE_CONFIG = {` par le `const firebaseConfig = {` de Firebase :
+// l'app accepte les deux noms, mais garde celui-ci pour t'y retrouver.
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyCbe0iOpZLZ2Yv7KdR0NgtZSoBhyH1VUyo",
   authDomain:        "onemoretime-feeae.firebaseapp.com",
@@ -356,6 +359,13 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "566347168027",
   appId:             "1:566347168027:web:a6c28e74098bdf9c3b3bbe"
 };
+
+// Accepte FIREBASE_CONFIG ou firebaseConfig (le nom utilisé par la console Firebase).
+function cfg(){
+  try { if (FIREBASE_CONFIG && FIREBASE_CONFIG.databaseURL) return FIREBASE_CONFIG; } catch(e){}
+  try { if (firebaseConfig  && firebaseConfig.databaseURL)  return firebaseConfig;  } catch(e){}
+  return {};
+}
 
 const OFFER_SIZE    = 3;      // nombre de cartes proposées
 const REVEAL_LOCKED = false;  // true = les joueurs voient les aptitudes pas encore acquises
@@ -510,10 +520,15 @@ function localSync(code){
 }
 
 async function firebaseSync(code){
-  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js");
-  const { getDatabase, ref, onValue, runTransaction } =
-    await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js");
-  const db = getDatabase(initializeApp(FIREBASE_CONFIG));
+  let app, database;
+  try {
+    app      = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js");
+    database = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js");
+  } catch(e){
+    throw new Error("le SDK Firebase n'a pas pu être téléchargé. Vérifie la connexion internet du téléphone.");
+  }
+  const { getDatabase, ref, onValue, runTransaction } = database;
+  const db = getDatabase(app.initializeApp(cfg()));
   const node = ref(db, "sessions/" + code);
   return {
     mode:"firebase",
@@ -540,7 +555,7 @@ const commit = mut => SYNC && SYNC.transact(cur => mut(norm(cur)));
 
 async function connect(code){
   ME.code = code; saveMe();
-  SYNC = FIREBASE_CONFIG.databaseURL ? await firebaseSync(code) : localSync(code);
+  SYNC = cfg().databaseURL ? await firebaseSync(code) : localSync(code);
   SYNC.subscribe(raw => {
     S = norm(raw);
     if (ROLES.includes(ME.role) && !S.players[ME.role].device)
@@ -859,11 +874,14 @@ function viewJoin(){
       <p>Chaque échec vous rend plus dangereux. Prenez un siège.</p>
     </div>
 
-    ${SYNC ? `<div class="mode ${SYNC.mode === "local" ? "is-local" : ""}">
-        ${SYNC.mode === "local"
-          ? "MODE LOCAL — un seul navigateur. Ajoute ta config Firebase pour jouer sur plusieurs téléphones."
-          : "SYNCHRO FIREBASE — table " + esc(ME.code)}
-      </div>` : ""}
+    ${(() => {
+      if (SYNC) return `<div class="mode ${SYNC.mode === "local" ? "is-local" : ""}">${
+        SYNC.mode === "local" ? "MODE LOCAL — un seul navigateur"
+                              : "SYNCHRO FIREBASE — table " + esc(ME.code)}</div>`;
+      return cfg().databaseURL
+        ? `<div class="mode">CONFIG FIREBASE DÉTECTÉE</div>`
+        : `<div class="mode is-local">AUCUNE CONFIG FIREBASE — mode local, un seul navigateur</div>`;
+    })()}
 
     <section class="panel">
       <div class="field">
