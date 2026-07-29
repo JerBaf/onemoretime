@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14101b">
+<title>La Boucle — compagnon de run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Karla:ital,wght@0,400;0,600;0,800;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════
+   TOKENS
+   ══════════════════════════════════════════════════════════ */
+:root{
+  --felt:#14101b;        /* table sous lumière basse */
+  --felt-2:#1e1828;
+  --felt-3:#2a2237;
+  --edge:#3a3049;
+  --gild:#d9b168;        /* tranche dorée d'un jeu de cartes */
+  --gild-dim:#6f5a34;
+  --red:#c3423f;         /* couleurs rouges du paquet */
+  --red-soft:#e2796a;
+  --jade:#4fb3a1;        /* résine d'un d6 */
+  --jade-soft:#7fd6c5;
+  --parch:#ece3cf;
+  --ash:#8f86a0;
+  --ash-dim:#5d5570;
+  --danger:#b8452f;
+
+  --accent:var(--gild);
+  --accent-soft:var(--gild);
+
+  --r-s:6px; --r-m:10px; --r-l:16px;
+  --f-disp:'Abril Fatface', Georgia, serif;
+  --f-body:'Karla', system-ui, sans-serif;
+  --f-data:'Space Mono', ui-monospace, monospace;
+}
+body[data-accent="CARD"]{ --accent:var(--red);  --accent-soft:var(--red-soft); }
+body[data-accent="DICE"]{ --accent:var(--jade); --accent-soft:var(--jade-soft); }
+
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{min-height:100%}
+body{
+  font-family:var(--f-body);
+  color:var(--parch);
+  background:
+    radial-gradient(120% 80% at 50% -10%, #2a2138 0%, var(--felt) 58%),
+    var(--felt);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+  padding:0 0 env(safe-area-inset-bottom);
+}
+button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
+:focus-visible{outline:2px solid var(--gild); outline-offset:3px; border-radius:4px}
+.mono{font-family:var(--f-data)}
+
+/* ══════════════════════════════════════════════════════════
+   SHELL
+   ══════════════════════════════════════════════════════════ */
+.wrap{max-width:560px; margin:0 auto; padding:14px 14px 40px}
+.wrap.is-wide{max-width:1080px}
+
+.topbar{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; margin-bottom:14px;
+  background:linear-gradient(180deg,var(--felt-2),#181322);
+  border:1px solid var(--edge); border-top:2px solid var(--accent);
+  border-radius:var(--r-m);
+}
+.sigil{
+  width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center;
+  border:1px solid var(--accent); border-radius:var(--r-s);
+  color:var(--accent); font-size:19px; line-height:1;
+  background:#0f0b17;
+}
+.topbar h1{font-family:var(--f-disp); font-size:19px; font-weight:400; letter-spacing:.3px; line-height:1.1}
+.topbar .sub{font-size:11px; color:var(--ash); letter-spacing:.9px; text-transform:uppercase}
+.topbar .right{margin-left:auto; text-align:right}
+.count{font-family:var(--f-data); font-size:17px; color:var(--accent-soft)}
+.count small{color:var(--ash-dim); font-size:11px}
+
+/* ══════════════════════════════════════════════════════════
+   PANELS
+   ══════════════════════════════════════════════════════════ */
+.panel{
+  background:linear-gradient(180deg,#1c1626,#171220);
+  border:1px solid var(--edge); border-radius:var(--r-m);
+  padding:14px; margin-bottom:12px;
+}
+.eyebrow{
+  font-size:10.5px; letter-spacing:1.6px; text-transform:uppercase;
+  color:var(--ash); margin-bottom:10px;
+  display:flex; align-items:center; gap:8px;
+}
+.eyebrow::after{content:""; flex:1; height:1px; background:var(--edge)}
+.muted{color:var(--ash); font-size:13px; line-height:1.5}
+
+/* ══════════════════════════════════════════════════════════
+   BOUTONS
+   ══════════════════════════════════════════════════════════ */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  padding:11px 16px; border-radius:var(--r-s);
+  border:1px solid var(--edge); background:var(--felt-3);
+  font-weight:600; font-size:14px; letter-spacing:.2px;
+  transition:transform .12s ease, border-color .12s ease, background .12s ease;
+}
+.btn:hover{border-color:var(--accent); transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.is-primary{
+  background:linear-gradient(180deg,#3b2f18,#2a2110);
+  border-color:var(--gild-dim); color:var(--gild);
+}
+.btn.is-primary:hover{border-color:var(--gild)}
+.btn.is-ghost{background:transparent; color:var(--ash); font-weight:400}
+.btn.is-ghost:hover{color:var(--parch)}
+.btn.is-danger{color:#e0806c; border-color:#4a2a22}
+.btn.is-danger:hover{border-color:var(--danger)}
+.btn.is-block{width:100%}
+.btn[disabled]{opacity:.35; pointer-events:none}
+.btn-row{display:flex; gap:8px; flex-wrap:wrap}
+.btn-xs{padding:5px 9px; font-size:12px; border-radius:5px}
+
+/* ══════════════════════════════════════════════════════════
+   ÉCRAN D'ENTRÉE
+   ══════════════════════════════════════════════════════════ */
+.hero{text-align:center; padding:34px 8px 22px}
+.hero .kicker{font-size:11px; letter-spacing:3.4px; text-transform:uppercase; color:var(--gild-dim)}
+.hero h1{font-family:var(--f-disp); font-size:clamp(38px,12vw,58px); font-weight:400; line-height:.95; margin:10px 0 8px}
+.hero p{color:var(--ash); font-size:13.5px; max-width:34ch; margin:0 auto}
+
+.field{margin-bottom:14px}
+.field label{display:block; font-size:10.5px; letter-spacing:1.6px; text-transform:uppercase; color:var(--ash); margin-bottom:6px}
+.field input{
+  width:100%; padding:12px 14px; font-family:var(--f-data); font-size:17px; letter-spacing:3px;
+  text-transform:uppercase; color:var(--parch);
+  background:#0f0b17; border:1px solid var(--edge); border-radius:var(--r-s);
+}
+.field input:focus{outline:none; border-color:var(--gild)}
+
+.roles{display:grid; gap:10px}
+.role{
+  display:flex; align-items:center; gap:13px; text-align:left; width:100%;
+  padding:14px; border-radius:var(--r-m);
+  border:1px solid var(--edge); background:linear-gradient(180deg,#1c1626,#171220);
+  transition:border-color .14s ease, transform .14s ease;
+}
+.role:hover{transform:translateY(-2px)}
+.role .glyph{
+  width:46px; height:46px; flex:0 0 46px; display:grid; place-items:center;
+  border-radius:var(--r-s); font-size:23px; background:#0f0b17; border:1px solid var(--edge);
+}
+.role b{display:block; font-family:var(--f-disp); font-weight:400; font-size:19px; letter-spacing:.4px}
+.role span{display:block; font-size:12.5px; color:var(--ash); margin-top:2px}
+.role[data-role="CARD"]:hover{border-color:var(--red)}
+.role[data-role="CARD"] .glyph{color:var(--red-soft); border-color:#4a2530}
+.role[data-role="DICE"]:hover{border-color:var(--jade)}
+.role[data-role="DICE"] .glyph{color:var(--jade-soft); border-color:#204039}
+.role[data-role="MJ"]:hover{border-color:var(--gild)}
+.role[data-role="MJ"] .glyph{color:var(--gild); border-color:#453718}
+.role.is-taken{opacity:.42; pointer-events:none}
+.role .tag{margin-left:auto; font-family:var(--f-data); font-size:10px; color:var(--ash-dim); letter-spacing:1px}
+
+/* ══════════════════════════════════════════════════════════
+   ARBRE — plaques d'aptitudes
+   ══════════════════════════════════════════════════════════ */
+.branch{margin-bottom:6px}
+.branch-head{display:flex; align-items:baseline; gap:8px; margin-bottom:9px}
+.branch-head h3{font-family:var(--f-disp); font-weight:400; font-size:17px; letter-spacing:.3px}
+.branch-head .of{margin-left:auto; font-family:var(--f-data); font-size:11.5px; color:var(--ash-dim)}
+.branch-note{font-size:12.5px; color:var(--ash); line-height:1.5; margin:-2px 0 10px; border-left:2px solid var(--edge); padding-left:9px}
+
+.nodes{display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:7px}
+.node{
+  position:relative; text-align:left; width:100%;
+  padding:9px 10px; border-radius:var(--r-s);
+  border:1px solid var(--edge); background:#181222;
+  font-size:12.5px; line-height:1.3; min-height:52px;
+  transition:border-color .14s ease;
+}
+.node.is-owned{border-color:var(--accent); background:linear-gradient(180deg,#231b2f,#191325)}
+.node.is-owned::before{
+  content:""; position:absolute; inset:0 auto 0 0; width:2px;
+  background:var(--accent); border-radius:2px 0 0 2px;
+}
+.node.is-locked{color:var(--ash-dim); border-style:dashed}
+.node b{display:block; font-weight:800; font-size:12.5px; letter-spacing:.1px}
+.node .charge{
+  display:inline-block; margin-top:4px; padding:1px 5px; border-radius:3px;
+  font-family:var(--f-data); font-size:9.5px; letter-spacing:.5px;
+  border:1px solid var(--gild-dim); color:var(--gild);
+}
+.node .charge.is-spent{border-color:#4a2a22; color:#7a5347; text-decoration:line-through}
+.node .txt{display:none; margin-top:7px; padding-top:7px; border-top:1px solid var(--edge); color:var(--parch); font-size:12px; line-height:1.5}
+.node.is-open .txt{display:block}
+.node.is-owned:hover{border-color:var(--accent-soft)}
+
+/* ══════════════════════════════════════════════════════════
+   OFFRE — le moment fort
+   ══════════════════════════════════════════════════════════ */
+.overlay{
+  position:fixed; inset:0; z-index:50; overflow-y:auto;
+  background:
+    radial-gradient(90% 60% at 50% 34%, rgba(60,48,84,.9) 0%, rgba(12,9,17,.97) 70%),
+    rgba(10,8,14,.98);
+  padding:22px 14px calc(28px + env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; align-items:center;
+}
+.banner{
+  position:relative; margin:6px 0 20px; padding:13px 40px;
+  background:linear-gradient(180deg,#efe7d2,#d5c8a9);
+  color:#241c30; font-family:var(--f-disp); font-weight:400;
+  font-size:clamp(19px,5.4vw,26px); letter-spacing:.4px; text-align:center;
+  clip-path:polygon(0 14%, 3.5% 0, 96.5% 0, 100% 14%, 100% 86%, 96.5% 100%, 3.5% 100%, 0 86%);
+  animation:drop .34s cubic-bezier(.2,.9,.3,1) backwards;
+}
+@keyframes drop{from{opacity:0; transform:translateY(-14px)} to{opacity:1; transform:none}}
+
+.deal{
+  display:grid; gap:12px; width:100%; max-width:960px;
+  grid-template-columns:1fr;
+}
+@media (min-width:760px){ .deal{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))} }
+
+.oc{
+  position:relative; text-align:left; width:100%;
+  display:flex; flex-direction:column;
+  border-radius:12px; overflow:hidden;
+  border:1px solid var(--gild-dim);
+  background:linear-gradient(180deg,#241c31,#171120);
+  box-shadow:0 10px 26px rgba(0,0,0,.5);
+  transition:transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+  animation:deal .44s cubic-bezier(.2,.85,.3,1) backwards;
+}
+@keyframes deal{
+  from{opacity:0; transform:translateY(30px) rotate(var(--tilt,0deg)) scale(.94)}
+  to{opacity:1; transform:none}
+}
+.oc:nth-child(1){animation-delay:.03s; --tilt:-6deg}
+.oc:nth-child(2){animation-delay:.12s; --tilt:0deg}
+.oc:nth-child(3){animation-delay:.21s; --tilt:6deg}
+.oc:hover{transform:translateY(-4px); border-color:var(--gild)}
+.oc.is-sel{
+  border-color:var(--accent); transform:translateY(-6px);
+  box-shadow:0 0 0 1px var(--accent), 0 14px 32px rgba(0,0,0,.6);
+}
+
+/* face haute : la matière du joueur */
+.oc .face{
+  height:104px; display:grid; place-items:center; position:relative;
+  background:radial-gradient(70% 100% at 50% 0%, #322745, #1b1526);
+  border-bottom:1px solid var(--gild-dim);
+}
+.pip{font-size:48px; line-height:1; color:var(--parch)}
+.pip.is-red{color:var(--red-soft)}
+.idx{
+  position:absolute; top:8px; left:10px;
+  font-family:var(--f-data); font-size:12px; color:var(--gild); letter-spacing:1px;
+}
+.idx.br{top:auto; left:auto; bottom:8px; right:10px; transform:rotate(180deg)}
+.die{width:62px; height:62px}
+.die rect{fill:none; stroke:var(--jade-soft); stroke-width:3}
+.die circle{fill:var(--jade-soft)}
+
+.oc .name{
+  padding:10px 12px 8px; font-family:var(--f-disp); font-weight:400;
+  font-size:16.5px; line-height:1.18; letter-spacing:.2px;
+  background:linear-gradient(180deg,#2c2239,#241c31);
+}
+.oc .body{padding:0 12px 12px; font-size:13.5px; line-height:1.55; color:#d7cfe2; flex:1}
+.oc .foot{
+  display:flex; align-items:center; gap:7px; flex-wrap:wrap;
+  padding:9px 12px; border-top:1px solid var(--edge); background:#130f1c;
+}
+.chip{
+  font-family:var(--f-data); font-size:9.5px; letter-spacing:1px; text-transform:uppercase;
+  padding:2px 6px; border-radius:3px; border:1px solid var(--edge); color:var(--ash);
+}
+.chip.is-gild{border-color:var(--gild-dim); color:var(--gild)}
+
+.confirm{
+  position:sticky; bottom:0; width:100%; max-width:960px;
+  margin-top:18px; padding:16px 0 10px;
+  background:linear-gradient(180deg, rgba(12,9,17,0) 0%, rgba(12,9,17,.94) 42%);
+  display:flex; gap:10px; justify-content:center; align-items:center; flex-wrap:wrap;
+}
+.confirm .btn.is-primary{min-width:210px; padding:14px 22px; font-size:15px}
+.wait{text-align:center; color:var(--ash); font-size:13px; padding:20px 0}
+
+/* ══════════════════════════════════════════════════════════
+   MJ
+   ══════════════════════════════════════════════════════════ */
+.grid2{display:grid; gap:12px}
+@media (min-width:820px){ .grid2{grid-template-columns:1fr 1fr} }
+.mj-col{border-top:2px solid var(--seat,var(--edge))}
+.mj-col[data-seat="CARD"]{--seat:var(--red)}
+.mj-col[data-seat="DICE"]{--seat:var(--jade)}
+.mj-head{display:flex; align-items:center; gap:9px; margin-bottom:10px}
+.mj-head h2{font-family:var(--f-disp); font-weight:400; font-size:19px}
+.dot{width:7px; height:7px; border-radius:50%; background:var(--ash-dim); flex:0 0 7px}
+.dot.on{background:var(--jade); box-shadow:0 0 7px var(--jade)}
+.kv{display:flex; justify-content:space-between; gap:10px; font-size:13px; padding:5px 0; border-bottom:1px solid #241d31}
+.kv:last-child{border-bottom:none}
+.kv span{color:var(--ash)}
+.kv b{font-weight:600; text-align:right}
+.list{display:flex; flex-direction:column; gap:5px; margin-top:8px}
+.item{
+  display:flex; align-items:center; gap:8px; font-size:12.5px;
+  padding:6px 8px; border-radius:5px; background:#181222; border:1px solid var(--edge);
+}
+.item .grow{flex:1; min-width:0}
+.item .grow b{display:block; font-weight:700}
+.item .grow em{display:block; font-style:normal; font-size:11px; color:var(--ash)}
+.x{color:var(--ash-dim); font-size:16px; line-height:1; padding:2px 5px}
+.x:hover{color:var(--danger)}
+select{
+  width:100%; padding:9px 10px; font:inherit; font-size:13px; color:var(--parch);
+  background:#0f0b17; border:1px solid var(--edge); border-radius:5px;
+}
+.pending{
+  margin-top:8px; padding:9px; border-radius:6px;
+  border:1px dashed var(--gild-dim); background:#1d1729; font-size:12.5px;
+}
+.pending b{color:var(--gild); font-family:var(--f-data); font-size:10px; letter-spacing:1.2px; text-transform:uppercase; display:block; margin-bottom:5px}
+.warn{color:#e0a06c; font-size:12.5px; margin-top:7px; line-height:1.45}
+
+.mode{
+  display:flex; align-items:center; gap:8px; justify-content:center;
+  padding:8px 12px; margin-bottom:12px; border-radius:var(--r-s);
+  font-family:var(--f-data); font-size:11px; letter-spacing:.6px;
+  border:1px solid var(--edge); color:var(--ash); background:#181222;
+}
+.mode.is-local{border-color:#4a3a1c; color:var(--gild)}
+
+@media (prefers-reduced-motion:reduce){ *{animation:none!important; transition:none!important} }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+/* ══════════════════════════════════════════════════════════════════════
+   1 ▸ CONFIG — la seule zone à remplir
+   ══════════════════════════════════════════════════════════════════════ */
+
+// Colle ici la config de ton projet Firebase (voir README).
+// Tant que databaseURL est vide, l'app tourne en MODE LOCAL (un seul
+// navigateur, plusieurs onglets) — pratique pour tester seul.
+const FIREBASE_CONFIG = {
+  apiKey:      "",
+  authDomain:  "",
+  databaseURL: "",
+  projectId:   "",
+  appId:       ""
+};
+
+const OFFER_SIZE    = 3;      // nombre de cartes proposées
+const REVEAL_LOCKED = false;  // true = les joueurs voient les aptitudes pas encore acquises
+
+/* ══════════════════════════════════════════════════════════════════════
+   2 ▸ DONNÉES — noms, textes, branches. Édite librement.
+        charge:true  →  aptitude "1× par run" (jeton à cocher)
+   ══════════════════════════════════════════════════════════════════════ */
+const DATA = {
+  CARD: {
+    label:"Cartes", glyph:"♠",
+    starter:"3-4-5-6 de chaque couleur (16 cartes) · main de 5 · score = 5 + valeur jouée",
+    base:[
+      {id:"poigne",   name:"Poigne de Turc",       text:"Main de 6 cartes."},
+      {id:"mulligan", name:"Mulligan",             text:"Remettre jusqu'à deux cartes sous la pioche, puis en piocher autant.", charge:true},
+      {id:"select",   name:"Select",               text:"Remplace 2 cartes du paquet par un 7 et un 8."},
+      {id:"hophop",   name:"Hop Hop Hop pas si vite", text:"Repêche jusqu'à 3 cartes défaussées lors de ce tour et les place aléatoirement dans le deck.", charge:true}
+    ],
+    classes:{
+      poker:{
+        name:"Poker", glyph:"♦",
+        text:"Jouer plusieurs cartes d'un coup. Score = 5 + somme des valeurs des cartes jouées.",
+        feats:[
+          {id:"lapaire",  name:"Lapaire il y en a pas 2", text:"Les paires sont jouables."},
+          {id:"joker",    name:"Joker",                   text:"Ajoute un joker au paquet. Joué, il prend la valeur choisie parmi les cartes possibles du deck."},
+          {id:"sweet",    name:"Sweet",                   text:"Peut jouer des suites de 3 cartes. Absolument délicieux."},
+          {id:"branlant", name:"Branlant",                text:"Les brelans sont jouables, mais ça reste bancal."},
+          {id:"raciste",  name:"Raciste",                 text:"Peut jouer 3 cartes de la même couleur (pique, carreau, cœur, trèfle)."},
+          {id:"bluff",    name:"Bluff",                   text:"Joue les cartes face cachée en annonçant ce qui est joué — vrai ou faux. Le MJ tranche : bluff ou réalité. S'il se trompe, +5 sur la valeur RÉELLE des cartes jouées. Sinon une carte au hasard parmi celles jouées est détruite définitivement.", charge:true},
+          {id:"cococombo",name:"Co-co-combo",             text:"Choisir un type de combinaison. Chaque réussite consécutive de cette combinaison augmente son score de +2, jusqu'à +6. Une autre combinaison ou un échec interrompt la série. Réinitialisée au début de chaque run."}
+        ]
+      },
+      tuktuk:{
+        name:"Tuk-Tuk", glyph:"♣",
+        text:"Enchaîner les cartes. Joue une carte : elle produit son score de base. Puis effectue les prédictions débloquées dans l'ordre ; après chaque réussite il peut s'arrêter et garder ses bonus. En cas d'erreur il perd tous les bonus Tuk-Tuk, mais garde le score de sa carte initiale. Chaque carte révélée est défaussée.",
+        feats:[
+          {id:"feubi",    name:"Feu Bicolore",   text:"Peut annoncer rouge ou noir. +2"},
+          {id:"tumontes", name:"Tu montes ?",    text:"Plus haut, plus bas ou égal. +3"},
+          {id:"jetourne", name:"Je tourne là ?", text:"À partir des deux dernières cartes, annoncer dedans ou dehors (strictement). +4"},
+          {id:"master",   name:"Masterclass",    text:"Annonce la couleur exacte (trèfle, pique, carreau, cœur). +5"},
+          {id:"retro",    name:"Coup de rétro",  text:"Regarde la prochaine carte de la pioche.", charge:true},
+          {id:"market",   name:"Market Stop",    text:"Peut interrompre volontairement une chaîne après au moins deux appels réussis : choisir une des cartes révélées et la replacer sous la pioche. En cas d'échec, aucune carte n'est récupérée."},
+          {id:"assurance",name:"Assurance",      text:"Quand une prédiction échoue, défausse la carte révélée sans perdre les bonus accumulés, puis refais la même prédiction avec la carte suivante.", charge:true},
+          {id:"berzingue",name:"À toute berzingue", text:"Après 4 appels consécutifs, double les points des bonus (la carte de base n'est pas impactée)."}
+        ]
+      }
+    }
+  },
+
+  DICE: {
+    label:"Dés", glyph:"⚄",
+    starter:"3d6 · somme de tous les dés pour dépasser le seuil · un 1 détruit le dé pour la run",
+    base:[
+      {id:"menteur", name:"Menteur-Tricheur",  text:"Change la valeur d'un dé de ±1.", charge:true},
+      {id:"prise",   name:"Oh la belle prise !", text:"Avant le lancer, choisir un dé et tenter de le lancer dans le gobelet. S'il entre, son résultat compte et le joueur gagne +4. S'il rate, ce dé ne compte pas.", charge:true},
+      {id:"monmien", name:"Mon mien !",        text:"Empêche tous les dés présentant un 1 de se faire détruire.", charge:true}
+    ],
+    classes:{
+      titan:{
+        name:"Titan", glyph:"⬢",
+        text:"Des dés plus gros, qui explosent.",
+        feats:[
+          {id:"boom",     name:"BOOM SHAKALAKA",   text:"Chaque fois qu'un dé atteint son maximum, relance-le et ajoute le résultat."},
+          {id:"remets",   name:"Je vous en remets bien un petit peu", text:"Augmente un dé d'un cran (d6→d8, d8→d10, …)."},
+          {id:"gourmand", name:"Oh le gourmand",   text:"Mange (détruit) un dé pour la run en cours, mais réussit automatiquement le défi."},
+          {id:"petiot",   name:"Touche pas le petiot", text:"Si un dé devait être détruit, il est à la place réduit d'un cran définitivement."},
+          {id:"faim",     name:"C'est qu'il a faim celui-là", text:"Augmente un dé de 2 crans (d6 → d10)."},
+          {id:"sauce",    name:"Supplément sauce blanche !", text:"Remplace 2d6 par 2d8."},
+          {id:"bigbrain", name:"BIG BRAIN",        text:"Si la somme des dés est un nombre premier, +5."}
+        ]
+      },
+      minimoys:{
+        name:"Minimoys", glyph:"◈",
+        text:"Transforme la dice pool en 4d4. La destruction n'intervient que lorsque au moins DEUX dés montrent un 1, et non plus un seul.",
+        feats:[
+          {id:"callme",   name:"Call me maybe",  text:"Parie sur le nombre exact de 4 visibles. Si atteint, +2 par 4 visible. Un pari de zéro rapporte 2 points."},
+          {id:"nuee",     name:"Nuée",           text:"Ajoute 1d4 à la pool."},
+          {id:"jumeaux",  name:"Jumeaux",        text:"Une paire rapporte +2. Deux paires différentes rapportent +4."},
+          {id:"triples",  name:"Triplés",        text:"+5 si trois valeurs équivalentes. Non cumulable avec Jumeaux."},
+          {id:"pickme",   name:"Pick me",        text:"Relance un dé choisi."},
+          {id:"lessmore", name:"Less is more",   text:"Les 1 valent 4 dans le calcul de la somme, mais restent des 1 pour toute autre interaction."},
+          {id:"embryon",  name:"Embryon",        text:"Sacrifie 1d4 immédiatement. Ajoute 2d4 à la prochaine run."}
+        ]
+      }
+    }
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   3 ▸ ÉTAT PARTAGÉ
+   ══════════════════════════════════════════════════════════════════════ */
+const ROLES = ["CARD","DICE"];
+const clone = o => JSON.parse(JSON.stringify(o));
+
+function norm(s){
+  s = s || {};
+  const seat = r => {
+    const p = (s.players && s.players[r]) || {};
+    return {
+      device: p.device || null,
+      cls:    p.cls    || null,
+      feats:  Array.isArray(p.feats) ? p.feats.filter(Boolean) : (p.feats ? Object.values(p.feats) : []),
+      used:   p.used   || {}
+    };
+  };
+  return {
+    run: s.run || 1,
+    born: s.born || Date.now(),
+    players:{ CARD: seat("CARD"), DICE: seat("DICE") },
+    offers:{ CARD: (s.offers && s.offers.CARD) || null, DICE: (s.offers && s.offers.DICE) || null },
+    log: Array.isArray(s.log) ? s.log : (s.log ? Object.values(s.log) : [])
+  };
+}
+
+const featsOf = (role, cls) =>
+  DATA[role].base.concat(cls ? DATA[role].classes[cls].feats : []);
+function allFeats(role){
+  const out = DATA[role].base.slice();
+  for (const k in DATA[role].classes) out.push(...DATA[role].classes[k].feats);
+  return out;
+}
+const feat = (role,id) => allFeats(role).find(f => f.id === id) || {id, name:id, text:""};
+const eligible = (role, p) => featsOf(role, p.cls).filter(f => !p.feats.includes(f.id));
+
+function sample(arr, n){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, n);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   4 ▸ SYNCHRO — Firebase si configuré, sinon localStorage inter-onglets
+   ══════════════════════════════════════════════════════════════════════ */
+function localSync(code){
+  const KEY = "boucle:" + code;
+  let cb = () => {};
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch(e){ return null; } };
+  addEventListener("storage", e => { if (e.key === KEY) cb(read()); });
+  return {
+    mode:"local",
+    subscribe(fn){ cb = fn; fn(read()); },
+    transact(mut){
+      const next = mut(read());
+      if (next === undefined) return;
+      localStorage.setItem(KEY, JSON.stringify(next));
+      cb(next);
+    }
+  };
+}
+
+async function firebaseSync(code){
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js");
+  const { getDatabase, ref, onValue, runTransaction } =
+    await import("https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js");
+  const db = getDatabase(initializeApp(FIREBASE_CONFIG));
+  const node = ref(db, "sessions/" + code);
+  return {
+    mode:"firebase",
+    subscribe(fn){ onValue(node, snap => fn(snap.val())); },
+    transact(mut){ runTransaction(node, cur => mut(cur)); }
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   5 ▸ SESSION LOCALE
+   ══════════════════════════════════════════════════════════════════════ */
+const ME = JSON.parse(localStorage.getItem("boucle:me") || "null") || {
+  device: Math.random().toString(36).slice(2, 11),
+  code: "", role: ""
+};
+const saveMe = () => localStorage.setItem("boucle:me", JSON.stringify(ME));
+
+let SYNC = null;
+let S = norm(null);
+let sel = null;   // carte tapée dans l'offre courante
+const app = document.getElementById("app");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const commit = mut => SYNC && SYNC.transact(cur => mut(norm(cur)));
+
+async function connect(code){
+  ME.code = code; saveMe();
+  SYNC = FIREBASE_CONFIG.databaseURL ? await firebaseSync(code) : localSync(code);
+  SYNC.subscribe(raw => {
+    S = norm(raw);
+    if (ROLES.includes(ME.role) && !S.players[ME.role].device)
+      commit(s => { s.players[ME.role].device = ME.device; return s; });
+    render();
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   6 ▸ ACTIONS
+   ══════════════════════════════════════════════════════════════════════ */
+const A = {
+  join(role){
+    if (role === "MJ"){ ME.role = "MJ"; saveMe(); render(); return; }
+    const seat = S.players[role];
+    if (seat.device && seat.device !== ME.device){ alert("Ce siège est déjà occupé."); return; }
+    ME.role = role; saveMe();
+    commit(s => { s.players[role].device = ME.device; return s; });
+    render();
+  },
+
+  leave(){ ME.role = ""; saveMe(); sel = null; render(); },
+
+  offer(kind, roles){
+    commit(s => {
+      for (const r of roles){
+        const p = s.players[r];
+        if (kind === "class"){
+          if (p.cls) continue;
+          s.offers[r] = {kind:"class", options:Object.keys(DATA[r].classes)};
+        } else {
+          const pool = eligible(r, p);
+          if (!pool.length){ s.offers[r] = null; continue; }
+          s.offers[r] = {kind:"feat", options:sample(pool, OFFER_SIZE).map(f => f.id)};
+        }
+      }
+      return s;
+    });
+  },
+
+  pick(role, id){
+    commit(s => {
+      const o = s.offers[role]; if (!o) return s;
+      const p = s.players[role];
+      if (o.kind === "class") p.cls = id;
+      else if (!p.feats.includes(id)) p.feats.push(id);
+      s.log = s.log.concat([{role, kind:o.kind, id, offer:o.options}]).slice(-40);
+      s.offers[role] = null;
+      return s;
+    });
+    sel = null;
+  },
+
+  skip(role){
+    commit(s => {
+      const o = s.offers[role]; if (!o) return s;
+      s.log = s.log.concat([{role, kind:"skip", id:null, offer:o.options, was:o.kind}]).slice(-40);
+      s.offers[role] = null;
+      return s;
+    });
+    sel = null;
+  },
+
+  undo(){
+    commit(s => {
+      const e = s.log.pop(); if (!e) return s;
+      const p = s.players[e.role];
+      if (e.kind === "feat"){ p.feats = p.feats.filter(x => x !== e.id); delete p.used[e.id]; }
+      if (e.kind === "class") p.cls = null;
+      s.offers[e.role] = {kind: e.kind === "skip" ? (e.was || "feat") : e.kind, options:e.offer};
+      return s;
+    });
+  },
+
+  toggleUsed(role, id){
+    commit(s => {
+      const u = s.players[role].used;
+      if (u[id]) delete u[id]; else u[id] = true;
+      return s;
+    });
+  },
+
+  newRun(){
+    commit(s => { s.run++; s.players.CARD.used = {}; s.players.DICE.used = {}; return s; });
+  },
+
+  grant(role, id){
+    commit(s => {
+      const p = s.players[role];
+      if (id && !p.feats.includes(id)) p.feats.push(id);
+      return s;
+    });
+  },
+
+  revoke(role, id){
+    commit(s => {
+      const p = s.players[role];
+      p.feats = p.feats.filter(x => x !== id); delete p.used[id];
+      return s;
+    });
+  },
+
+  setClass(role, cls){ commit(s => { s.players[role].cls = cls || null; return s; }); },
+
+  clearOffer(role){ commit(s => { s.offers[role] = null; return s; }); },
+
+  reset(){
+    if (!confirm("Effacer classes, aptitudes et offres de cette table ?")) return;
+    commit(() => norm(null));
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   7 ▸ RENDU
+   ══════════════════════════════════════════════════════════════════════ */
+const SUITS = ["♠","♥","♦","♣"];
+function pipFace(role, i){
+  if (role === "DICE"){
+    const P = {0:[[50,50]], 1:[[31,31],[69,69]], 2:[[28,28],[50,50],[72,72]]}[i] || [[50,50]];
+    return `<svg class="die" viewBox="0 0 100 100" aria-hidden="true">
+      <rect x="7" y="7" width="86" height="86" rx="17"/>
+      ${P.map(([x,y]) => `<circle cx="${x}" cy="${y}" r="8.5"/>`).join("")}
+    </svg>`;
+  }
+  const s = SUITS[i % 4], red = s === "♥" || s === "♦";
+  return `<span class="pip${red ? " is-red" : ""}">${s}</span>`;
+}
+
+function offerCard(role, id, i, kind){
+  const isClass = kind === "class";
+  const c = isClass ? DATA[role].classes[id] : feat(role, id);
+  const src = isClass ? "Spécialité"
+            : DATA[role].base.some(f => f.id === id) ? "Tronc commun"
+            : (DATA[role].classes[S.players[role].cls] || {}).name || "Spécialité";
+  const chips = isClass
+    ? `<span class="chip is-gild">${c.feats.length} aptitudes</span><span class="chip">définitif</span>`
+    : `<span class="chip">${esc(src)}</span>${c.charge ? '<span class="chip is-gild">1× par run</span>' : ""}`;
+  return `<button class="oc${sel === id ? " is-sel" : ""}" data-act="sel" data-id="${esc(id)}">
+    <div class="face"><span class="idx">${i + 1}</span>${pipFace(role, i)}<span class="idx br">${i + 1}</span></div>
+    <div class="name">${esc(c.name)}</div>
+    <div class="body">${esc(c.text)}</div>
+    <div class="foot">${chips}</div>
+  </button>`;
+}
+
+function overlay(role, o){
+  const title = o.kind === "class" ? "Choisis ta spécialité" : "Choisis une amélioration";
+  const note  = o.kind === "class" ? "Une fois choisie, tu ne piocheras plus que dans cette branche et dans le tronc commun."
+                                   : `${o.options.length} proposition${o.options.length > 1 ? "s" : ""} tirées au sort.`;
+  return `<div class="overlay">
+    <div class="banner">${title}</div>
+    <div class="deal">${o.options.map((id, i) => offerCard(role, id, i, o.kind)).join("")}</div>
+    <div class="confirm">
+      <button class="btn is-primary" data-act="confirm" ${sel ? "" : "disabled"}>
+        ${sel ? "Prendre « " + esc((o.kind === "class" ? DATA[role].classes[sel] : feat(role, sel)).name) + " »" : "Touche une carte"}
+      </button>
+      ${o.kind === "feat" ? '<button class="btn is-ghost" data-act="skip">Passer</button>' : ""}
+    </div>
+    <p class="wait">${esc(note)}</p>
+  </div>`;
+}
+
+function nodes(role, list, p, mine){
+  return `<div class="nodes">${list.map(f => {
+    const owned = p.feats.includes(f.id);
+    const hide  = !owned && !REVEAL_LOCKED && mine;
+    const spent = !!p.used[f.id];
+    return `<button class="node ${owned ? "is-owned" : "is-locked"}" data-act="node" data-id="${esc(f.id)}">
+      <b>${hide ? "???" : esc(f.name)}</b>
+      ${owned && f.charge ? `<span class="charge${spent ? " is-spent" : ""}">${spent ? "utilisé" : "1× dispo"}</span>` : ""}
+      ${owned ? `<span class="txt">${esc(f.text)}</span>` : ""}
+    </button>`;
+  }).join("")}</div>`;
+}
+
+function viewPlayer(role){
+  const p = S.players[role], o = S.offers[role];
+  const cls = p.cls ? DATA[role].classes[p.cls] : null;
+  const total = featsOf(role, p.cls).length;
+  document.body.dataset.accent = role;
+
+  return `<div class="wrap">
+    <header class="topbar">
+      <div class="sigil">${cls ? cls.glyph : DATA[role].glyph}</div>
+      <div>
+        <h1>${cls ? esc(cls.name) : "Sans spécialité"}</h1>
+        <div class="sub">${esc(DATA[role].label)} · run ${S.run}</div>
+      </div>
+      <div class="right"><div class="count">${p.feats.length}<small>/${total}</small></div></div>
+    </header>
+
+    <section class="panel">
+      <div class="eyebrow">Set de départ</div>
+      <p class="muted">${esc(DATA[role].starter)}</p>
+    </section>
+
+    <section class="panel">
+      <div class="branch">
+        <div class="branch-head"><h3>Tronc commun</h3>
+          <span class="of">${p.feats.filter(id => DATA[role].base.some(f => f.id === id)).length}/${DATA[role].base.length}</span></div>
+        ${nodes(role, DATA[role].base, p, true)}
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="branch">
+        <div class="branch-head"><h3>${cls ? esc(cls.name) : "Spécialité"}</h3>
+          ${cls ? `<span class="of">${p.feats.filter(id => cls.feats.some(f => f.id === id)).length}/${cls.feats.length}</span>` : ""}</div>
+        ${cls
+          ? `<p class="branch-note">${esc(cls.text)}</p>${nodes(role, cls.feats, p, true)}`
+          : `<p class="muted">Pas encore de spécialité. Le MJ ouvrira le choix au début de la deuxième run.</p>`}
+      </div>
+    </section>
+
+    <div class="btn-row"><button class="btn is-ghost btn-xs" data-act="leave">Changer de siège</button></div>
+  </div>
+  ${o ? overlay(role, o) : ""}`;
+}
+
+function mjSeat(role){
+  const p = S.players[role], o = S.offers[role];
+  const cls = p.cls ? DATA[role].classes[p.cls] : null;
+  const pool = eligible(role, p);
+  const rest = allFeats(role).filter(f => !p.feats.includes(f.id));
+
+  return `<section class="panel mj-col" data-seat="${role}">
+    <div class="mj-head">
+      <span class="dot ${p.device ? "on" : ""}"></span>
+      <h2>${role === "CARD" ? "Cartes" : "Dés"}</h2>
+      <span class="chip">${p.device ? "connecté" : "siège libre"}</span>
+    </div>
+
+    <div class="kv"><span>Spécialité</span><b>${cls ? esc(cls.name) : "—"}</b></div>
+    <div class="kv"><span>Aptitudes</span><b>${p.feats.length}</b></div>
+    <div class="kv"><span>Pioche éligible</span><b class="mono">${pool.length}</b></div>
+    ${pool.length && pool.length < OFFER_SIZE
+      ? `<p class="warn">Il ne reste que ${pool.length} aptitude${pool.length > 1 ? "s" : ""} éligible${pool.length > 1 ? "s" : ""} : l'offre ne sera pas un vrai choix.</p>` : ""}
+    ${!pool.length ? `<p class="warn">Plus rien à proposer dans cette branche.</p>` : ""}
+
+    ${o ? `<div class="pending"><b>Offre en attente — ${o.kind === "class" ? "spécialité" : "aptitude"}</b>
+        ${o.options.map(id => esc((o.kind === "class" ? DATA[role].classes[id] : feat(role, id)).name)).join(" · ")}
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn btn-xs" data-act="reroll" data-role="${role}">Relancer le tirage</button>
+          <button class="btn btn-xs is-ghost" data-act="cancel" data-role="${role}">Retirer l'offre</button>
+        </div></div>` : ""}
+
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn btn-xs" data-act="offer1" data-role="${role}">Proposer une aptitude</button>
+      <button class="btn btn-xs" data-act="offerc" data-role="${role}" ${p.cls ? "disabled" : ""}>Proposer la spécialité</button>
+    </div>
+
+    <div class="list">
+      ${p.feats.length ? p.feats.map(id => {
+        const f = feat(role, id);
+        return `<div class="item">
+          <div class="grow"><b>${esc(f.name)}</b><em>${esc(f.text.slice(0, 74))}${f.text.length > 74 ? "…" : ""}</em></div>
+          ${f.charge ? `<button class="btn btn-xs is-ghost" data-act="used" data-role="${role}" data-id="${id}">${p.used[id] ? "utilisé" : "dispo"}</button>` : ""}
+          <button class="x" data-act="revoke" data-role="${role}" data-id="${id}" title="Retirer">×</button>
+        </div>`;
+      }).join("") : `<p class="muted">Aucune aptitude.</p>`}
+    </div>
+
+    <div style="margin-top:10px; display:grid; gap:6px">
+      <select data-act="grant" data-role="${role}">
+        <option value="">Ajouter une aptitude à la main…</option>
+        ${rest.map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join("")}
+      </select>
+      <select data-act="setclass" data-role="${role}">
+        <option value="" ${p.cls ? "" : "selected"}>Spécialité : aucune</option>
+        ${Object.entries(DATA[role].classes).map(([k, c]) =>
+          `<option value="${k}" ${p.cls === k ? "selected" : ""}>${esc(c.name)}</option>`).join("")}
+      </select>
+    </div>
+  </section>`;
+}
+
+function viewMJ(){
+  document.body.dataset.accent = "MJ";
+  const last = S.log[S.log.length - 1];
+  return `<div class="wrap is-wide">
+    <header class="topbar">
+      <div class="sigil">✦</div>
+      <div><h1>Table ${esc(ME.code)}</h1><div class="sub">Vue MJ · run ${S.run}</div></div>
+      <div class="right"><div class="count">${S.run}<small> run</small></div></div>
+    </header>
+
+    <section class="panel">
+      <div class="eyebrow">Déclencher</div>
+      <div class="btn-row">
+        <button class="btn is-primary" data-act="offerAll">Proposer une aptitude aux deux</button>
+        <button class="btn" data-act="offerClassAll">Proposer le choix de spécialité</button>
+        <button class="btn" data-act="newrun">Nouvelle run</button>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-xs is-ghost" data-act="undo" ${last ? "" : "disabled"}>
+          Annuler le dernier choix${last ? " (" + (last.role === "CARD" ? "Cartes" : "Dés") + ")" : ""}
+        </button>
+        <button class="btn btn-xs is-danger" data-act="reset">Réinitialiser la table</button>
+        <button class="btn btn-xs is-ghost" data-act="leave">Quitter</button>
+      </div>
+      <p class="muted" style="margin-top:9px">« Nouvelle run » remet à zéro tous les jetons 1× par run. Les aptitudes restent acquises.</p>
+    </section>
+
+    <div class="grid2">${mjSeat("CARD")}${mjSeat("DICE")}</div>
+  </div>`;
+}
+
+function viewJoin(){
+  document.body.dataset.accent = "MJ";
+  const taken = r => S.players[r].device && S.players[r].device !== ME.device;
+  const connected = !!SYNC;
+  return `<div class="wrap">
+    <div class="hero">
+      <div class="kicker">Compagnon de run</div>
+      <h1>La Boucle</h1>
+      <p>Chaque échec vous rend plus dangereux. Prenez un siège.</p>
+    </div>
+
+    ${SYNC ? `<div class="mode ${SYNC.mode === "local" ? "is-local" : ""}">
+        ${SYNC.mode === "local"
+          ? "MODE LOCAL — un seul navigateur. Ajoute ta config Firebase pour jouer sur plusieurs téléphones."
+          : "SYNCHRO FIREBASE — table " + esc(ME.code)}
+      </div>` : ""}
+
+    <section class="panel">
+      <div class="field">
+        <label for="code">Code de table</label>
+        <input id="code" maxlength="8" value="${esc(ME.code || "BOUCLE")}" autocomplete="off" spellcheck="false">
+      </div>
+      ${connected ? "" : `<button class="btn is-primary is-block" data-act="connect">Rejoindre la table</button>`}
+    </section>
+
+    ${connected ? `<section class="panel">
+      <div class="eyebrow">Ton siège</div>
+      <div class="roles">
+        <button class="role ${taken("CARD") ? "is-taken" : ""}" data-role="CARD" data-act="join">
+          <span class="glyph">♠</span>
+          <span><b>Cartes</b><span>Main de 5, Poker ou Tuk-Tuk</span></span>
+          ${taken("CARD") ? '<span class="tag">PRIS</span>' : ""}
+        </button>
+        <button class="role ${taken("DICE") ? "is-taken" : ""}" data-role="DICE" data-act="join">
+          <span class="glyph">⚄</span>
+          <span><b>Dés</b><span>Dice pool 3d6, Titan ou Minimoys</span></span>
+          ${taken("DICE") ? '<span class="tag">PRIS</span>' : ""}
+        </button>
+        <button class="role" data-role="MJ" data-act="join">
+          <span class="glyph">✦</span>
+          <span><b>MJ</b><span>Voir tout, distribuer les offres</span></span>
+        </button>
+      </div>
+      <p class="muted" style="margin-top:11px">Un siège occupé se libère avec « Réinitialiser la table » côté MJ.</p>
+    </section>` : ""}
+  </div>`;
+}
+
+function render(){
+  if (!SYNC || !ME.role) app.innerHTML = viewJoin();
+  else if (ME.role === "MJ") app.innerHTML = viewMJ();
+  else app.innerHTML = viewPlayer(ME.role);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   8 ▸ ÉVÉNEMENTS
+   ══════════════════════════════════════════════════════════════════════ */
+app.addEventListener("click", async e => {
+  const el = e.target.closest("[data-act]"); if (!el || el.tagName === "SELECT") return;
+  const act = el.dataset.act, role = el.dataset.role, id = el.dataset.id;
+
+  if (act === "connect"){
+    const code = (document.getElementById("code").value || "BOUCLE").toUpperCase().replace(/[^A-Z0-9]/g, "") || "BOUCLE";
+    try { await connect(code); } catch(err){ alert("Connexion impossible : " + err.message); return; }
+    render(); return;
+  }
+  if (act === "join")   return A.join(el.dataset.role);
+  if (act === "leave")  return A.leave();
+
+  if (act === "sel"){ sel = (sel === id ? null : id); return render(); }
+  if (act === "confirm" && sel) return A.pick(ME.role, sel);
+  if (act === "skip")   return A.skip(ME.role);
+
+  if (act === "node"){ el.classList.toggle("is-open"); return; }
+
+  if (act === "offerAll")      return A.offer("feat",  ROLES);
+  if (act === "offerClassAll") return A.offer("class", ROLES);
+  if (act === "offer1")        return A.offer("feat",  [role]);
+  if (act === "offerc")        return A.offer("class", [role]);
+  if (act === "reroll")        return A.offer(S.offers[role].kind, [role]);
+  if (act === "cancel")        return A.clearOffer(role);
+  if (act === "newrun")        return A.newRun();
+  if (act === "undo")          return A.undo();
+  if (act === "used")          return A.toggleUsed(role, id);
+  if (act === "revoke")        return A.revoke(role, id);
+  if (act === "reset")         return A.reset();
+});
+
+app.addEventListener("change", e => {
+  const el = e.target.closest("select[data-act]"); if (!el) return;
+  const v = el.value;
+  if (el.dataset.act === "grant" && v) A.grant(el.dataset.role, v);
+  if (el.dataset.act === "setclass")   A.setClass(el.dataset.role, v);
+});
+
+/* démarrage */
+(async () => {
+  if (ME.code){ try { await connect(ME.code); } catch(e){ /* écran d'entrée */ } }
+  render();
+})();
+</script>
+</body>
+</html>
