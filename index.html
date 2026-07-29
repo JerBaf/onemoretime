@@ -192,6 +192,16 @@ button{font:inherit; color:inherit; background:none; border:none; cursor:pointer
   border:1px solid var(--gild-dim); color:var(--gild);
 }
 .node .charge.is-spent{border-color:#4a2a22; color:#7a5347; text-decoration:line-through}
+.charge.is-auto{border-color:var(--edge); color:var(--ash)}
+.grant{
+  margin-top:10px; padding:8px 10px; border-radius:5px;
+  background:#191322; border-left:2px solid var(--gild);
+  font-size:12.5px; line-height:1.5; color:#cfc6de;
+}
+.grant b{
+  display:block; font-family:var(--f-data); font-size:9.5px; letter-spacing:1.2px;
+  text-transform:uppercase; color:var(--gild); margin-bottom:3px;
+}
 .node .txt{display:none; margin-top:7px; padding-top:7px; border-top:1px solid var(--edge); color:var(--parch); font-size:12px; line-height:1.5}
 .node.is-open .txt{display:block}
 .node.is-owned:hover{border-color:var(--accent-soft)}
@@ -386,30 +396,30 @@ const DATA = {
     ],
     classes:{
       poker:{
-        name:"Poker", glyph:"♦",
+        name:"Poker", glyph:"♦", grant:"lapaire",
         text:"Jouer plusieurs cartes d'un coup. Score = 5 + somme des valeurs des cartes jouées.",
         feats:[
-          {id:"lapaire",  name:"Lapaire il y en a pas 2", text:"Les paires sont jouables."},
+          {id:"lapaire",  name:"Lapaire il y en a pas 2", text:"Les paires sont jouables.", auto:true},
           {id:"joker",    name:"Joker",                   text:"Ajoute un joker au paquet. Joué, il prend la valeur choisie parmi les cartes possibles du deck."},
           {id:"sweet",    name:"Sweet",                   text:"Peut jouer des suites de 3 cartes. Absolument délicieux."},
           {id:"branlant", name:"Branlant",                text:"Les brelans sont jouables, mais ça reste bancal."},
           {id:"raciste",  name:"Raciste",                 text:"Peut jouer 3 cartes de la même couleur (pique, carreau, cœur, trèfle)."},
-          {id:"bluff",    name:"Bluff",                   text:"Joue les cartes face cachée en annonçant ce qui est joué — vrai ou faux. Le MJ tranche : bluff ou réalité. S'il se trompe, +5 sur la valeur RÉELLE des cartes jouées. Sinon une carte au hasard parmi celles jouées est détruite définitivement.", charge:true},
+          {id:"bluff",    name:"Bluff",                   text:"Joue les cartes face cachée en annonçant ce qui est joué. Le joueur peut mentir ou dire la vérité, mais les cartes réellement jouées doivent toujours former une combinaison qu'il sait jouer ; le mensonge porte sur le type de combinaison, les valeurs ou les couleurs. Le MJ annonce ensuite s'il pense que c'est un bluff. S'il devine correctement, l'action échoue et une carte jouée au hasard est détruite définitivement. S'il se trompe, la combinaison réelle est résolue avec +5.", charge:true},
           {id:"cococombo",name:"Co-co-combo",             text:"Choisir un type de combinaison. Chaque réussite consécutive de cette combinaison augmente son score de +2, jusqu'à +6. Une autre combinaison ou un échec interrompt la série. Réinitialisée au début de chaque run."}
         ]
       },
       tuktuk:{
-        name:"Tuk-Tuk", glyph:"♣",
+        name:"Tuk-Tuk", glyph:"♣", grant:"feubi",
         text:"Enchaîner les cartes. Joue une carte : elle produit son score de base. Puis effectue les prédictions débloquées dans l'ordre ; après chaque réussite il peut s'arrêter et garder ses bonus. En cas d'erreur il perd tous les bonus Tuk-Tuk, mais garde le score de sa carte initiale. Chaque carte révélée est défaussée.",
         feats:[
-          {id:"feubi",    name:"Feu Bicolore",   text:"Peut annoncer rouge ou noir. +2"},
+          {id:"feubi",    name:"Feu Bicolore",   text:"Peut annoncer rouge ou noir. +2", auto:true},
           {id:"tumontes", name:"Tu montes ?",    text:"Plus haut, plus bas ou égal. +3"},
           {id:"jetourne", name:"Je tourne là ?", text:"À partir des deux dernières cartes, annoncer dedans ou dehors (strictement). +4"},
-          {id:"master",   name:"Masterclass",    text:"Annonce la couleur exacte (trèfle, pique, carreau, cœur). +5"},
+          {id:"master",   name:"Masterclass",    text:"Annonce la couleur exacte (trèfle, pique, carreau, cœur). +6"},
           {id:"retro",    name:"Coup de rétro",  text:"Regarde la prochaine carte de la pioche.", charge:true},
           {id:"market",   name:"Market Stop",    text:"Peut interrompre volontairement une chaîne après au moins deux appels réussis : choisir une des cartes révélées et la replacer sous la pioche. En cas d'échec, aucune carte n'est récupérée."},
           {id:"assurance",name:"Assurance",      text:"Quand une prédiction échoue, défausse la carte révélée sans perdre les bonus accumulés, puis refais la même prédiction avec la carte suivante.", charge:true},
-          {id:"berzingue",name:"À toute berzingue", text:"Après 4 appels consécutifs, double les points des bonus (la carte de base n'est pas impactée)."}
+          {id:"berzingue",name:"À toute berzingue", text:"Après 3 appels consécutifs, double les points des bonus (la carte de base n'est pas impactée)."}
         ]
       }
     }
@@ -430,8 +440,8 @@ const DATA = {
         feats:[
           {id:"boom",     name:"BOOM SHAKALAKA",   text:"Chaque fois qu'un dé atteint son maximum, relance-le et ajoute le résultat."},
           {id:"remets",   name:"Je vous en remets bien un petit peu", text:"Augmente un dé d'un cran (d6→d8, d8→d10, …)."},
-          {id:"gourmand", name:"Oh le gourmand",   text:"Mange (détruit) un dé pour la run en cours, mais réussit automatiquement le défi."},
-          {id:"petiot",   name:"Touche pas le petiot", text:"Si un dé devait être détruit, il est à la place réduit d'un cran définitivement."},
+          {id:"gourmand", name:"Oh le gourmand",   text:"Avant le lancer d'un test, mange (détruit) pour cette run le dé possédant le plus grand nombre de faces. Le test est automatiquement réussi.", charge:true},
+          {id:"petiot",   name:"Touche pas le petiot", text:"Si un dé devait être détruit, il peut à la place être conservé mais réduit d'un cran définitivement. Un d4 ne peut pas être réduit davantage : il est détruit normalement."},
           {id:"faim",     name:"C'est qu'il a faim celui-là", text:"Augmente un dé de 2 crans (d6 → d10)."},
           {id:"sauce",    name:"Supplément sauce blanche !", text:"Remplace 2d6 par 2d8."},
           {id:"bigbrain", name:"BIG BRAIN",        text:"Si la somme des dés est un nombre premier, +5."}
@@ -447,7 +457,7 @@ const DATA = {
           {id:"triples",  name:"Triplés",        text:"+5 si trois valeurs équivalentes. Non cumulable avec Jumeaux."},
           {id:"pickme",   name:"Pick me",        text:"Relance un dé choisi."},
           {id:"lessmore", name:"Less is more",   text:"Les 1 valent 4 dans le calcul de la somme, mais restent des 1 pour toute autre interaction."},
-          {id:"embryon",  name:"Embryon",        text:"Sacrifie 1d4 immédiatement. Ajoute 2d4 à la prochaine run."}
+          {id:"embryon",  name:"Embryon",        text:"En recevant cette amélioration, retire 1d4 pour la run en cours. À partir de la run suivante, ajoute définitivement 2d4 à la réserve."}
         ]
       }
     }
@@ -488,7 +498,7 @@ function allFeats(role){
   return out;
 }
 const feat = (role,id) => allFeats(role).find(f => f.id === id) || {id, name:id, text:""};
-const eligible = (role, p) => featsOf(role, p.cls).filter(f => !p.feats.includes(f.id));
+const eligible = (role, p) => featsOf(role, p.cls).filter(f => !f.auto && !p.feats.includes(f.id));
 
 function sample(arr, n){
   const a = arr.slice();
@@ -600,7 +610,11 @@ const A = {
     commit(s => {
       const o = s.offers[role]; if (!o) return s;
       const p = s.players[role];
-      if (o.kind === "class") p.cls = id;
+      if (o.kind === "class"){
+        p.cls = id;
+        const g = DATA[role].classes[id].grant;
+        if (g && !p.feats.includes(g)) p.feats.push(g);
+      }
       else if (!p.feats.includes(id)) p.feats.push(id);
       s.log = s.log.concat([{role, kind:o.kind, id, offer:o.options}]).slice(-40);
       s.offers[role] = null;
@@ -624,7 +638,11 @@ const A = {
       const e = s.log.pop(); if (!e) return s;
       const p = s.players[e.role];
       if (e.kind === "feat"){ p.feats = p.feats.filter(x => x !== e.id); delete p.used[e.id]; }
-      if (e.kind === "class") p.cls = null;
+      if (e.kind === "class"){
+        const g = (DATA[e.role].classes[e.id] || {}).grant;
+        if (g) p.feats = p.feats.filter(x => x !== g);
+        p.cls = null;
+      }
       s.offers[e.role] = {kind: e.kind === "skip" ? (e.was || "feat") : e.kind, options:e.offer};
       return s;
     });
@@ -658,7 +676,15 @@ const A = {
     });
   },
 
-  setClass(role, cls){ commit(s => { s.players[role].cls = cls || null; return s; }); },
+  setClass(role, cls){
+    commit(s => {
+      const p = s.players[role];
+      p.cls = cls || null;
+      const g = cls && DATA[role].classes[cls].grant;
+      if (g && !p.feats.includes(g)) p.feats.push(g);
+      return s;
+    });
+  },
 
   clearOffer(role){ commit(s => { s.offers[role] = null; return s; }); },
 
@@ -687,6 +713,7 @@ function pipFace(role, i){
 function offerCard(role, id, i, kind){
   const isClass = kind === "class";
   const c = isClass ? DATA[role].classes[id] : feat(role, id);
+  const g = isClass && c.grant ? feat(role, c.grant) : null;
   const src = isClass ? "Spécialité"
             : DATA[role].base.some(f => f.id === id) ? "Tronc commun"
             : (DATA[role].classes[S.players[role].cls] || {}).name || "Spécialité";
@@ -696,7 +723,7 @@ function offerCard(role, id, i, kind){
   return `<button class="oc${sel === id ? " is-sel" : ""}" data-act="sel" data-id="${esc(id)}">
     <div class="face"><span class="idx">${i + 1}</span>${pipFace(role, i)}<span class="idx br">${i + 1}</span></div>
     <div class="name">${esc(c.name)}</div>
-    <div class="body">${esc(c.text)}</div>
+    <div class="body">${esc(c.text)}${g ? `<div class="grant"><b>Offert d'office</b>${esc(g.name)} — ${esc(g.text)}</div>` : ""}</div>
     <div class="foot">${chips}</div>
   </button>`;
 }
@@ -725,6 +752,7 @@ function nodes(role, list, p, mine){
     const spent = !!p.used[f.id];
     return `<button class="node ${owned ? "is-owned" : "is-locked"}" data-act="node" data-id="${esc(f.id)}">
       <b>${hide ? "???" : esc(f.name)}</b>
+      ${owned && f.auto ? `<span class="charge is-auto">d'office</span>` : ""}
       ${owned && f.charge ? `<span class="charge${spent ? " is-spent" : ""}">${spent ? "utilisé" : "1× dispo"}</span>` : ""}
       ${owned ? `<span class="txt">${esc(f.text)}</span>` : ""}
     </button>`;
@@ -811,7 +839,7 @@ function mjSeat(role){
       ${p.feats.length ? p.feats.map(id => {
         const f = feat(role, id);
         return `<div class="item">
-          <div class="grow"><b>${esc(f.name)}</b><em>${esc(f.text.slice(0, 74))}${f.text.length > 74 ? "…" : ""}</em></div>
+          <div class="grow"><b>${esc(f.name)}${f.auto ? " · d'office" : ""}</b><em>${esc(f.text.slice(0, 74))}${f.text.length > 74 ? "…" : ""}</em></div>
           ${f.charge ? `<button class="btn btn-xs is-ghost" data-act="used" data-role="${role}" data-id="${id}">${p.used[id] ? "utilisé" : "dispo"}</button>` : ""}
           <button class="x" data-act="revoke" data-role="${role}" data-id="${id}" title="Retirer">×</button>
         </div>`;
